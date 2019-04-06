@@ -17,8 +17,7 @@ state_manager = StateManager()
 @app.route('/kek', methods=['GET', 'POST'])
 def entry_point():
     if request.method == 'GET':
-        token_sent = request.args['hub.verify_token']
-        return verify_fb_token(token_sent)
+        return verify_fb_token(request.args)
     else:
         payload = request.get_json()
         for event in payload['entry']:
@@ -40,11 +39,14 @@ def entry_point():
         return "Message Processed"
 
 
-def verify_fb_token(token_sent):
-    if token_sent == VERIFY_TOKEN:
-        return request.args['hub.challenge']
-    else:
-        return 'Invalid verification token'
+def verify_fb_token(req):
+    mode = req['hub.mode']
+    token = req['hub.verify_token']
+    challenge = req['hub.challenge']
+
+    if mode and token:
+        if mode == 'subscribe' and token == VERIFY_TOKEN:
+            return challenge
 
 
 def is_user_message(message):
