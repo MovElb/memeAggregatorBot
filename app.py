@@ -1,17 +1,11 @@
+import argparse
 from flask import Flask, request
-from pymessenger.bot import Bot
-from state_manager import StateManager
-import re
-import requests
+from process import process_message
 
-
-with open('.tokens/access_token') as a_fd, open('.tokens/verify_token') as v_fd:
-    ACCESS_TOKEN = a_fd.read()
+with open('.tokens/verify_token') as v_fd:
     VERIFY_TOKEN = v_fd.read()
 
 app = Flask(__name__)
-bot = Bot(ACCESS_TOKEN)
-state_manager = StateManager()
 
 
 @app.route('/kek', methods=['GET', 'POST'])
@@ -25,17 +19,10 @@ def entry_point():
 
             for message in messaging:
                 if is_user_message(message):
-                    text = message['message']['text']
                     user_id = message['sender']['id']
+                    text = message['message']['text']
 
-                    user_state = state_manager.get_state(user_id)
-                    if user_state != StateManager.S_NULL:
-                        handle_command(text, user_id)
-                    elif user_state == StateManager.S_WAIT_URL_SUB:
-                        state_manager.set_state(user_id)
-                    elif user_state == StateManager.S_WAIT_URL_UNSUB:
-                        state_manager.set_state(user_id)
-
+                    process_message(user_id, text)
         return "Message Processed"
 
 
@@ -46,6 +33,7 @@ def verify_fb_token(req):
 
     if mode and token:
         if mode == 'subscribe' and token == VERIFY_TOKEN:
+            print(challenge)
             return challenge
 
 
@@ -56,49 +44,9 @@ def is_user_message(message):
             not message['message'].get("is_echo"))
 
 
-def handle_command(text, user_id):
-    if not re.fullmatch(r'(.*\s)?/(help|random|subscribe|unsubscribe)(\s.*)?', text):
-        bot.send_text_message(user_id, "I don't understand you. Use /help to get the list of commands.")
-        return
-
-    command = re.compile(r'/(help|random|subscribe|unsubscribe)').group()
-    if command == '/help':
-        bot.send_text_message(
-            user_id,
-            '''List of all commands
-            /help - Get list of all comands
-            /random - Get random meme from bash.im
-            /subscribe - Subscribe meme source
-            /unsubscribe - Unsubscribe meme source
-            '''
-        )
-
-    if command == '/random':
-        send_random_meme(user_id)
-
-    if command == '/subscribe':
-        bot.send_text_message(
-            user_id,
-            '''Give me source URL. I support the following sources:
-            reddit.com
-            '''
-        )
-        state_manager.set_state(user_id, state_manager.S_WAIT_URL_UNSUB)
-
-    if command == '/unsubscribe':
-        pass
-
-
-def send_random_meme(user_id):
-    r = requests.get('https://www.reddit.com/r/memes/random/.json', headers={'User-agent': 'random meme'})
-    url = r.json()[0]['data']['children'][0]['data']['url']
-    text = r.json()[0]['data']['children'][0]['data']['selftext']
-
-    if url[-4:] == '.jpg':
-        bot.send_image_url(user_id, url)
-    else:
-        bot.send_text_message(user_id, text | url)
-
-
 if __name__ == '__main__':
-    app.run('0.0.0.0', port=1234)
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-p', '--port', type=int, default=999)
+    args = parser.parse_args()
+
+    app.run('0.0.0.0', port=args.port)
