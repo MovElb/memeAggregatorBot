@@ -111,7 +111,7 @@ def send_random_meme(user_id):
 def verify_url(url, goto_url=True):
     p = urllib.parse.urlsplit(url)
 
-    cond = (p.netloc == 'reddit.com' and re.fullmatch(r'/r/.+.*', p.path)) or \
+    cond = (re.fullmatch(r'(www.)?reddit.com', p.netloc) and re.fullmatch(r'/r/.+.*', p.path)) or \
            (p.netloc == '' and re.fullmatch(r'(www.)?reddit.com/r/.+.*', p.path))
     if not cond:
         return ''
