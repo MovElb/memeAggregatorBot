@@ -125,7 +125,9 @@ def verify_url(url, goto_url=True):
             urllib.parse.urljoin(url, 'random/.json?limit=1'), headers={'User-agent': 'random meme'}
         ).json()
         url = url if r['data']['dist'] else ''
-    except:
+    except Exception as e:
+        print('URL EXCEPTION')
+        print(e)
         return ''
 
     return url

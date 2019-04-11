@@ -20,9 +20,6 @@ class FacebookGraphApi(object):
         self.access_token = access_token
         self.session = aiohttp.ClientSession()
 
-    def __del__(self):
-        await self.session.close()
-
     @property
     def auth_args(self):
         if not hasattr(self, '_auth_args'):
