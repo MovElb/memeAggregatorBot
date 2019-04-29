@@ -29,7 +29,6 @@ async def schedule(delay):
 
 
 async def update_subscriptions(bot, master, session):
-
     urls_iter = master.isscan(URLS_KEY)
     urls_num = await master.scard(URLS_KEY)
     BATCH_SIZE = 10
